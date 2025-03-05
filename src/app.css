@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+.center {
+	@apply m-auto md:max-w-1/2 xl:max-w-1/3;
+}

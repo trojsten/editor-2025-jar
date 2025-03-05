@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../sqlite.db"
+}
+
+model Team {
+  id String @id @unique @default(nanoid())
+
+  name     String
+  password String @unique
+
+  sessions  Session[]
+  inventory Inventory[]
+}
+
+model Session {
+  id String @id @unique @default(nanoid())
+
+  created DateTime @default(now())
+  updated DateTime @default(now()) @updatedAt
+
+  team Team? @relation(fields: [teamId], references: [id])
+
+  teamId String?
+}
+
+model Inventory {
+  item     String
+  quantity Int
+
+  team Team @relation(fields: [teamId], references: [id])
+
+  teamId String
+
+  @@id([item, teamId])
+}
+
+model Code {
+  code      String @unique
+  item      String
+  available Int    @default(1)
+}
+
+model Problem {
+  id String @id @unique @default(nanoid())
+
+  slug        String @unique
+  title       String
+  description String
+  points      Int
+}
