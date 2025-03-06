@@ -7,9 +7,6 @@ export const actions = {
 
 		const team = await db.team.findUnique({ where: { password: data.get('password') } });
 
-		console.warn(team, data.get('password'));
-		console.warn(locals.session);
-
 		if (!team) {
 			return fail(400, { error: 'Incorrect password' });
 		}

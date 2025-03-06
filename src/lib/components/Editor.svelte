@@ -1,10 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	export let language = 'javascript';
-	export let value = '';
-	export let theme = 'customTheme'; //'vs-dark';
-	export let onType: (needed: Map<string, number>) => Promise<boolean>;
+	let {
+		language,
+		value = $bindable(),
+		theme = 'customTheme',
+		onType
+	}: {
+		language: string;
+		value: string;
+		theme?: string;
+		onType: (needed: Map<string, number>) => Promise<boolean>;
+	} = $props();
 
 	let editorContainer: HTMLDivElement;
 
@@ -74,6 +81,8 @@
 					() => null
 				);
 			}
+
+			value = editor.getValue();
 		});
 
 		editor.onMouseDown((event) => {

@@ -46,6 +46,7 @@
 		]
 	},
 	"dependencies": {
+		"@humanspeak/svelte-markdown": "^0.7.19",
 		"@prisma/client": "6.4.1",
 		"monaco-editor": "^0.52.2"
 	}

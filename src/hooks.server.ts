@@ -37,7 +37,7 @@ const session: Handle = async ({ event, resolve }) => {
 };
 
 const protect: Handle = async ({ event, resolve }) => {
-	if (event.url.pathname.match(/^\/(problems|scan|api)/i))
+	if (event.url.pathname.match(/^\/(problems|scan|api\/inventory)/i))
 		if (!event.locals.session.team) {
 			return new Response(undefined, {
 				headers: { location: `/login` },

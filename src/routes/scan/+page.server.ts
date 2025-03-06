@@ -1,18 +1,7 @@
 import { clients } from '$lib/server/clients';
 import db from '$lib/server/db';
 import { fail } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
-
-export const load: PageServerLoad = async ({ locals }) => {
-	const inventory = await db.inventory.findMany({
-		where: { team: locals.session.team },
-		select: { item: true, quantity: true }
-	});
-
-	return {
-		inventory
-	};
-};
+import type { Actions } from './$types';
 
 export const actions = {
 	default: async ({ request, locals }) => {
@@ -24,11 +13,6 @@ export const actions = {
 			return fail(400, { error: `Code not provided` });
 		}
 
-		const inventory = await db.inventory.findMany({
-			where: { team: locals.session.team },
-			select: { item: true, quantity: true }
-		});
-
 		try {
 			const c = await db.code.update({
 				where: { code },
@@ -36,36 +20,46 @@ export const actions = {
 			});
 
 			if (c && c.available >= 0) {
-				await db.inventory.upsert({
-					where: {
-						item_teamId: {
+				const [, inventory] = await db.$transaction([
+					db.inventory.upsert({
+						where: {
+							item_teamId: {
+								item: c.item,
+								teamId: locals.session.team.id
+							}
+						},
+						create: {
+							team: { connect: locals.session.team },
 							item: c.item,
-							teamId: locals.session.team.id
+							quantity: 1
+						},
+						update: {
+							quantity: { increment: 1 }
 						}
-					},
-					create: {
-						team: { connect: locals.session.team },
-						item: c.item,
-						quantity: 1
-					},
-					update: {
-						quantity: { increment: 1 }
-					}
-				});
+					}),
+					db.inventory.findMany({
+						where: { team: locals.session.team },
+						select: { item: true, quantity: true }
+					})
+				]);
 
 				const team = clients.get(locals.session.team.id);
+				const inv = inventory.reduce((acc, { item, quantity }) => {
+					acc[item] = quantity;
+					return acc;
+				}, {});
 				if (team) {
 					for (const [, emit] of team) {
-						emit('inventory', JSON.stringify(inventory));
+						emit('inventory', JSON.stringify(inv));
 					}
 				}
 
-				return { message: `${code}: OK (${c.available} remaing)`, inventory };
+				return { message: `${code}: OK (${c.available} remaing)` };
 			}
 
-			return fail(400, { error: `${code}: Code not longer available`, inventory });
+			return fail(400, { error: `${code}: Code not longer available` });
 		} catch {
-			return fail(400, { error: `${code}: Code not available (error)`, inventory });
+			return fail(400, { error: `${code}: Code not available (error)` });
 		}
 	}
 } satisfies Actions;

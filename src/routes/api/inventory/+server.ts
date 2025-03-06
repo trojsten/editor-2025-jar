@@ -23,7 +23,11 @@ export const POST: RequestHandler = async ({ locals }) => {
           select: { item: true, quantity: true }
         })
         .then((inventory) => {
-          emit('inventory', JSON.stringify(inventory));
+          const inv = inventory.reduce((acc, { item, quantity }) => {
+            acc[item] = quantity;
+            return acc;
+          }, {});
+          emit('inventory', JSON.stringify(inv));
         });
     },
     {
@@ -61,9 +65,14 @@ export const DELETE: RequestHandler = async ({ locals, request }) => {
     select: { item: true, quantity: true }
   });
   const team = clients.get(locals.session.team.id);
+
+  const inv = inventory.reduce((acc, { item, quantity }) => {
+    acc[item] = quantity;
+    return acc;
+  }, {});
   if (team) {
     for (const [, emit] of team) {
-      emit('inventory', JSON.stringify(inventory));
+      emit('inventory', JSON.stringify(inv));
     }
   }
 

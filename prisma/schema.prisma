@@ -21,6 +21,7 @@ model Team {
 
   sessions  Session[]
   inventory Inventory[]
+  submits   Submit[]
 }
 
 model Session {
@@ -32,6 +33,25 @@ model Session {
   team Team? @relation(fields: [teamId], references: [id])
 
   teamId String?
+}
+
+model Submit {
+  id String @id @unique @default(nanoid())
+
+  team    Team    @relation(fields: [teamId], references: [id])
+  problem Problem @relation(fields: [problemId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  teamId    String
+  problemId String
+
+  // data from Judge
+  publicId      String  @unique
+  protocolKey   String
+  status        Int?
+  testingStatus String?
+  protocol      String
 }
 
 model Inventory {
@@ -58,4 +78,6 @@ model Problem {
   title       String
   description String
   points      Int
+
+  submits Submit[]
 }
