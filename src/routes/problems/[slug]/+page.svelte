@@ -9,16 +9,31 @@
 
 	import { browser } from '$app/environment';
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { env } from '$env/dynamic/public';
 	import { source } from 'sveltekit-sse';
-	const inventory = source('/api/inventory', {
+
+	const sseSource = source('/api/inventory', {
 		close({ connect }) {
 			console.log('reconnecting...');
 			connect();
 		}
-	})
-		.select('inventory')
-		.json();
+	});
+	const inventory = sseSource.select('inventory').json();
+
+	let submits = $state(data.submits.reverse());
+
+	sseSource
+		.select('submits-' + data.problem?.slug)
+		.json()
+		.subscribe((s) => {
+			if (!s) return;
+			submits = s.reverse();
+			const protocol = JSON.parse(s[0]?.protocol);
+			if (protocol?.final_verdict && protocol?.final_verdict == 'OK') {
+				invalidateAll();
+			}
+		});
 
 	const onType = async (needed: Map<string, number>) => {
 		let possible = true;
@@ -31,7 +46,6 @@
 		}
 
 		if (possible) {
-			// send DELETE request
 			await fetch(`/api/inventory`, {
 				method: 'DELETE',
 				headers: {
@@ -84,10 +98,13 @@
 	{#if !problem}
 		<div class="text-white">Found problem: Problem not found</div>
 	{:else}
+		{@const solved = data.session.team.solved.some((p) => p.slug == problem.slug)}
 		<div>
 			<div class="flex flex-row justify-between">
 				<h1 class="text-3xl">{problem.title}</h1>
-				<span class="rounded-xl bg-red-600 px-3 py-1">{problem.points} bodov</span>
+				<span class="rounded-xl px-3 py-1" class:bg-red-600={!solved} class:bg-green-600={solved}
+					>{problem.points} bodov</span
+				>
 			</div>
 			<div class="my-5">
 				<Inventory inventory={$inventory}></Inventory>
@@ -99,8 +116,18 @@
 				class="prose prose-headings:text-white prose-headings:mt-0 h-[calc(100vh-20.75rem)] overflow-y-scroll text-white"
 			>
 				<SvelteMarkdown source={problem.description} />
-				<h2>Submity</h2>
-				{#each data.submits as submit, i (submit.id)}
+				<div class="flex flex-row justify-between">
+					<h2>Submity</h2>
+					<form method="POST" use:enhance>
+						<input type="hidden" name="program" bind:value={program} />
+						<button
+							type="submit"
+							class="py cursor-pointer rounded-xl bg-green-700 px-3 py-1 text-center hover:bg-green-600"
+							>Odovzdať</button
+						>
+					</form>
+				</div>
+				{#each submits as submit, i (submit.id)}
 					{@const protocol = JSON.parse(submit.protocol)}
 					<div>
 						<button
@@ -108,14 +135,36 @@
 							class=" my-2 flex w-full cursor-pointer justify-between rounded-xl bg-gray-950 p-2 text-white"
 							onclick={submit_show === i ? () => (submit_show = -1) : () => (submit_show = i)}
 						>
-							<span>{submit.createdAt.toLocaleString('sk-SK')}</span>
+							<span>{new Date(submit.createdAt).toLocaleString('sk-SK')}</span>
 							<span
 								class="rounded-xl px-2"
 								class:bg-red-600={protocol?.final_verdict && protocol?.final_verdict != 'OK'}
 								class:bg-green-600={protocol?.final_verdict && protocol?.final_verdict == 'OK'}
 								class:bg-gray-800={!protocol?.final_verdict}
 							>
-								{protocol?.final_verdict ?? 'Testujem...'}
+								{#if submit.status == 0}
+									{#if protocol?.final_verdict}
+										{protocol.final_verdict}
+									{:else if !submit.testingStatus}
+										Odoslané na Judge
+									{:else if submit.testingStatus == 'waiting'}
+										Čaká sa na testovanie
+									{:else if submit.testingStatus == 'pulling_image'}
+										Pripavuje sa testovanie
+									{:else if submit.testingStatus == 'measuring_timelimit'}
+										Určujem časový limit
+									{:else if submit.testingStatus == 'testing'}
+										Testujem
+									{:else if submit.testingStatus == 'done'}
+										Testovanie dokončené
+									{:else}
+										{submit.testingStatus}
+									{/if}
+								{:else if submit.status == 2}
+									Testovanie zlyhalo
+								{:else}
+									{protocol?.final_verdict}
+								{/if}
 							</span>
 						</button>
 						{#if submit_show === i}
@@ -123,14 +172,6 @@
 						{/if}
 					</div>
 				{/each}
-				<form method="POST" use:enhance>
-					<input type="hidden" name="program" bind:value={program} />
-					<button
-						type="submit"
-						class="cursor-pointer rounded-xl bg-green-700 px-4 py-2 text-center hover:bg-green-600"
-						>Odovzdať</button
-					>
-				</form>
 			</div>
 		</div>
 

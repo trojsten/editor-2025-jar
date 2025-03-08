@@ -19,7 +19,7 @@ export const POST: RequestHandler = async ({ locals }) => {
 
       db.inventory
         .findMany({
-          where: { team: locals.session.team },
+          where: { team: { id: locals.session.team.id } },
           select: { item: true, quantity: true }
         })
         .then((inventory) => {
@@ -61,7 +61,7 @@ export const DELETE: RequestHandler = async ({ locals, request }) => {
   );
 
   const inventory = await db.inventory.findMany({
-    where: { team: locals.session.team },
+    where: { team: { id: locals.session.team.id } },
     select: { item: true, quantity: true }
   });
   const team = clients.get(locals.session.team.id);

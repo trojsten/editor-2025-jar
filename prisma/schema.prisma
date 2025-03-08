@@ -22,6 +22,8 @@ model Team {
   sessions  Session[]
   inventory Inventory[]
   submits   Submit[]
+
+  solved Problem[]
 }
 
 model Session {
@@ -80,4 +82,5 @@ model Problem {
   points      Int
 
   submits Submit[]
+  solved  Team[]
 }

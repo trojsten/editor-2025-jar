@@ -7,7 +7,7 @@ declare global {
 			session: Prisma.SessionGetPayload<{
 				select: {
 					id: true;
-					team: { select: { id: true; name: true } };
+					team: { select: { id: true; name: true }; solved: { select: { slug: true } } };
 				};
 			}>;
 		}

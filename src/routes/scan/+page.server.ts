@@ -29,7 +29,7 @@ export const actions = {
 							}
 						},
 						create: {
-							team: { connect: locals.session.team },
+							team: { connect: { id: locals.session.team.id } },
 							item: c.item,
 							quantity: 1
 						},
@@ -38,7 +38,7 @@ export const actions = {
 						}
 					}),
 					db.inventory.findMany({
-						where: { team: locals.session.team },
+						where: { team: { id: locals.session.team.id } },
 						select: { item: true, quantity: true }
 					})
 				]);

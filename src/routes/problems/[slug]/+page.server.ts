@@ -9,12 +9,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			slug: params.slug
 		}
 	});
-	const submits = await db.submit.findMany({
-		where: {
-			problemId: problem.id,
-			teamId: locals.session.team.id
-		}
-	});
+	const submits = problem
+		? await db.submit.findMany({
+				where: {
+					problemId: problem.id,
+					teamId: locals.session.team.id
+				}
+			})
+		: [];
 	return {
 		problem,
 		submits
@@ -60,12 +62,13 @@ export const actions = {
 					status: data.status,
 					testingStatus: data.testing_status,
 					problem: { connect: problem },
-					team: { connect: locals.session.team }
+					team: { connect: { id: locals.session.team.id } }
 				}
 			});
 
 			return { success: true, publicId: data.public_id, protocolKey: data.protocol_key };
-		} catch {
+		} catch (e) {
+			console.error(e);
 			return fail(400, { error: `Error` });
 		}
 	}

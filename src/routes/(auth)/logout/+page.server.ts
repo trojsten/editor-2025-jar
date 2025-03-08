@@ -8,7 +8,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	await db.session.update({
 		where: { id: locals.session.id },
-		data: { team: { disconnect: locals.session.team } }
+		data: { team: { disconnect: { id: locals.session.team.id } } }
 	});
 
 	return { logged_out: true };
