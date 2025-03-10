@@ -4,7 +4,13 @@ import { defineConfig } from 'vite';
 import monacoEditorEsmPlugin from 'vite-plugin-monaco-editor-esm';
 
 export default defineConfig({
-	plugins: [sveltekit(), tailwindcss(), monacoEditorEsmPlugin()],
+	plugins: [
+		sveltekit(),
+		tailwindcss(),
+		monacoEditorEsmPlugin({
+			languageWorkers: []
+		})
+	],
 	server: {
 		watch: {
 			ignored: ['**/sqlite.db', '**/sqlite.db-journal']

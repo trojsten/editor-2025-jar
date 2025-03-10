@@ -3,7 +3,8 @@ import db from '$lib/server/db';
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals, depends }) => {
+	depends('app:problem');
 	const problem = await db.problem.findUnique({
 		where: {
 			slug: params.slug

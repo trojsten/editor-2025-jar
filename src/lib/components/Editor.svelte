@@ -10,7 +10,7 @@
 		language: string;
 		value: string;
 		theme?: string;
-		onType: (needed: Map<string, number>) => Promise<boolean>;
+		onType: (needed: Map<string, number>, deleted: Map<string, number>) => Promise<boolean>;
 	} = $props();
 
 	let editorContainer: HTMLDivElement;
@@ -38,7 +38,11 @@
 			value,
 			language,
 			theme,
-			contextmenu: false
+			contextmenu: false,
+			readOnlyMessage: {
+				value:
+					'Čakajte prosím, ešte spracovávame vašu predchádzajúcu požiadavku. Za meškanie sa v mene Železničnej spoločnosti Trojstenu, náhodného dopravcu, neospravedlňujeme.'
+			}
 		});
 
 		editor.onKeyDown((event) => {
@@ -48,8 +52,18 @@
 			}
 		});
 
+		let lastReverted = false;
+		let lastPosition = editor.getPosition();
+
 		editor.onDidChangeModelContent(async function (event) {
+			const wasReadonly = editor.getOption(monaco.editor.EditorOption.readOnly);
+			if (!wasReadonly) {
+				editor.updateOptions({
+					readOnly: true
+				});
+			}
 			const needed: Map<string, number> = new Map();
+			const deleted: Map<string, number> = new Map();
 
 			for (const change of event.changes) {
 				for (const c of change.text.replace(/\s/g, '')) {
@@ -59,30 +73,55 @@
 						needed.set(c, 1);
 					}
 				}
+				const deletedText = value
+					.split('\n')
+					[
+						change.range.startLineNumber - 1
+					].substring(change.range.startColumn - 1, change.range.endColumn - 1);
+				for (const c of deletedText) {
+					if (deleted.has(c)) {
+						deleted.set(c, deleted.get(c) + 1);
+					} else {
+						deleted.set(c, 1);
+					}
+				}
 			}
 
-			if (needed.size === 0) {
+			if (lastReverted && wasReadonly) {
+				lastReverted = false;
+				editor.updateOptions({
+					readOnly: false
+				});
 				return;
 			}
 
-			if (await onType(needed)) {
+			if (await onType(needed, deleted)) {
 				// Magic
-				editor.getModel().pushEditOperations(
-					[], // Pass an empty array for selections
-					event.changes.map((change) => ({
-						range: new monaco.Range(
-							change.range.startLineNumber,
-							change.range.startColumn,
-							change.range.endLineNumber + change.text.split('\n').length - 1,
-							change.range.endColumn + change.text.length
-						),
-						text: ''
-					})),
-					() => null
-				);
-			}
+				// editor.getModel().pushEditOperations(
+				// 	[], // Pass an empty array for selections
+				// 	event.changes.map((change) => ({
+				// 		range: new monaco.Range(
+				// 			change.range.startLineNumber,
+				// 			change.range.startColumn,
+				// 			change.range.endLineNumber + change.text.split('\n').length - 1,
+				// 			change.range.endColumn + change.text.length
+				// 		),
+				// 		text: ''
+				// 	})),
+				// 	() => null
+				// );
+				lastReverted = true;
+				editor.setValue(value);
+				if (lastPosition) editor.setPosition(lastPosition);
+			} else {
+				lastReverted = false;
 
-			value = editor.getValue();
+				value = editor.getValue();
+				lastPosition = editor.getPosition();
+				editor.updateOptions({
+					readOnly: false
+				});
+			}
 		});
 
 		editor.onMouseDown((event) => {

@@ -4,6 +4,10 @@
 	let { data }: PageProps = $props();
 </script>
 
+<svelte:head>
+	<title>Problémy | {data.session.team.name}</title>
+</svelte:head>
+
 <div class="center">
 	<h1 class="text-3xl">Úlohy</h1>
 	<div class="my-5 divide-y divide-gray-800 rounded-xl border-2 border-gray-800">

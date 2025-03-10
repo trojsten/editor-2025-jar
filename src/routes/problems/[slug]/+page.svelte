@@ -9,7 +9,7 @@
 
 	import { browser } from '$app/environment';
 	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidate } from '$app/navigation';
 	import { env } from '$env/dynamic/public';
 	import { source } from 'sveltekit-sse';
 
@@ -19,10 +19,10 @@
 			connect();
 		}
 	});
-	const inventory = sseSource.select('inventory').json();
 
 	let submits = $state(data.submits.reverse());
 
+	const inventory = sseSource.select('inventory').json();
 	sseSource
 		.select('submits-' + data.problem?.slug)
 		.json()
@@ -31,11 +31,18 @@
 			submits = s.reverse();
 			const protocol = JSON.parse(s[0]?.protocol);
 			if (protocol?.final_verdict && protocol?.final_verdict == 'OK') {
-				invalidateAll();
+				invalidate('app:problem');
 			}
 		});
-
-	const onType = async (needed: Map<string, number>) => {
+	sseSource
+		.select('upgrade')
+		.json()
+		.subscribe((d) => {
+			if (d === null) return;
+			console.log('HURRAY! Received Upgrade', d);
+			if (browser) invalidate('app:session');
+		});
+	const onType = async (needed: Map<string, number>, deleted: Map<string, number>) => {
 		let possible = true;
 
 		for (const [item, quantity] of needed) {
@@ -55,43 +62,30 @@
 			});
 		}
 
+		if (data.session.team.backspaceReturn > 0 && deleted.size > 0) {
+			await fetch(`/api/inventory`, {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(Array.from(deleted.entries()))
+			});
+		}
+
 		return !possible;
 	};
-
-	const keyboard_rows = [
-		['`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='],
-		['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\'],
-		['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', "'"],
-		['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/']
-	];
-
-	const shift_keyboard_rows = [
-		['~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+'],
-		['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '|'],
-		['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"'],
-		['Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?']
-	];
-
-	let shift_pressed = $state(false);
 
 	let program: string = $state('print("ahoj editor")');
 
 	let submit_show = $state(-1);
 </script>
 
-<svelte:window
-	onkeydown={(e) => {
-		shift_pressed = e.shiftKey;
-	}}
-	onkeyup={(e) => {
-		if (!e.shiftKey) shift_pressed = false;
-	}}
-/>
-
 <svelte:head>
 	{#if browser}
 		<script src="{env.PUBLIC_JUDGE_URL}/static/js/protocol-embed.js"></script>
 	{/if}
+
+	<title>{problem?.title} | {data.session.team.name}</title>
 </svelte:head>
 
 <div class="grid grid-cols-[1fr_2fr] gap-4">

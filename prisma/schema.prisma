@@ -19,6 +19,12 @@ model Team {
   name     String
   password String @unique
 
+  // upgrades, all should be ints, that can be incremented or decremented
+  scanIncrement   Int @default(1)
+  scanDecrement   Int @default(1)
+  backspaceReturn Int @default(0)
+  processingTime  Int @default(500)
+
   sessions  Session[]
   inventory Inventory[]
   submits   Submit[]

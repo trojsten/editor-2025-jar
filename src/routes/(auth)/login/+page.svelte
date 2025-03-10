@@ -4,6 +4,10 @@
 	let { form }: PageProps = $props();
 </script>
 
+<svelte:head>
+	<title>Prihlásenie</title>
+</svelte:head>
+
 <div class="center">
 	<h1 class="text-2xl">Prihlásenie</h1>
 	{#if form?.error}

@@ -17,7 +17,17 @@ const session: Handle = async ({ event, resolve }) => {
 		},
 		select: {
 			id: true,
-			team: { select: { id: true, name: true, solved: { select: { slug: true } } } }
+			team: {
+				select: {
+					id: true,
+					name: true,
+					scanDecrement: true,
+					scanIncrement: true,
+					backspaceReturn: true,
+					processingTime: true,
+					solved: { select: { slug: true } }
+				}
+			}
 		},
 		update: {
 			updated: new Date()

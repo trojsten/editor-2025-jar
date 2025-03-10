@@ -4,7 +4,7 @@
 	import { source } from 'sveltekit-sse';
 	import type { PageProps } from './$types';
 
-	let { form }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 
 	const inventory = source('/api/inventory', {
 		close({ connect }) {
@@ -15,6 +15,10 @@
 		.select('inventory')
 		.json();
 </script>
+
+<svelte:head>
+	<title>Skenovanie | {data.session.team.name}</title>
+</svelte:head>
 
 <div class="center">
 	<h1 class="text-2xl">Skenovanie kódov</h1>
