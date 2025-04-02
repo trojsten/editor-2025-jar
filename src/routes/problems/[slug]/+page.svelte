@@ -75,7 +75,7 @@
 		return !possible;
 	};
 
-	let program: string = $state('print("ahoj editor")');
+	let program: string = $state('');
 
 	let submit_show = $state(-1);
 </script>
